@@ -1,0 +1,5 @@
+# Optional: install when the prediction engine is built.
+-r requirements.txt
+scikit-learn==1.6.0
+xgboost==2.1.3
+pyarrow==18.1.0
