@@ -13,6 +13,8 @@ import type {
   SyncStatus,
   Team,
   TopPerformer,
+  Recommendations,
+  PlayerStatPrediction,
   TrendExplorer,
   WindowKind,
 } from "./types";
@@ -45,9 +47,14 @@ function buildUrl(path: string, params?: Params): string {
   return url.toString();
 }
 
-async function request<T>(path: string, params?: Params, init?: RequestInit): Promise<T> {
+async function request<T>(
+  path: string,
+  params?: Params,
+  init?: RequestInit,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+): Promise<T> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   let response: Response;
   try {
     response = await fetch(buildUrl(path, params), { ...init, signal: controller.signal });
@@ -142,6 +149,42 @@ export const api = {
   gameDetail: (id: number) => request<GameDetail>(`/games/${id}`),
   syncStatus: () => request<SyncStatus>("/sync/status"),
   triggerSync: () => request<{ queued: boolean }>("/sync/run", undefined, { method: "POST" }),
+  recommendations: (q: {
+    days?: number;
+    expandPlayerProps?: boolean;
+    gameId?: number | null;
+    teamId?: number | null;
+    category?: string;
+    side?: "over" | "under";
+    minProbability?: number;
+    q?: string;
+    gameDate?: string;
+    sort?: "probability" | "time" | "player";
+  }) =>
+    request<Recommendations>(
+      "/recommendations",
+      {
+      days: q.days ?? 7,
+      expand_player_props: q.expandPlayerProps,
+      game_id: q.gameId,
+      team_id: q.teamId,
+      category: q.category,
+      side: q.side,
+      min_probability: q.minProbability,
+      q: q.q,
+      game_date: q.gameDate,
+      sort: q.sort,
+      },
+      undefined,
+      240_000,
+    ),
+  customPlayerProp: (q: { playerId: number; gameId: number; category: string; line: number }) =>
+    request<PlayerStatPrediction>("/recommendations/player-prop", {
+      player_id: q.playerId,
+      game_id: q.gameId,
+      category: q.category,
+      line: q.line,
+    }),
   trends: (q: {
     stat: string;
     line: number;

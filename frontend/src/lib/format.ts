@@ -2,15 +2,48 @@ import { format, formatDistanceToNowStrict, parseISO } from "date-fns";
 
 import type { Game } from "./types";
 
+/** Leading YYYY-MM-DD from backend calendar dates or ISO datetimes (e.g. game start_time). */
+const CALENDAR_DATE_PREFIX = /^(\d{4})-(\d{2})-(\d{2})/;
+
 /** Parse a backend calendar date ("2026-10-21") without timezone shifting. */
 export function parseCalendarDate(value: string): Date {
-  const [y, m, d] = value.split("-").map(Number);
-  return new Date(y, m - 1, d);
+  const trimmed = value.trim();
+  const match = CALENDAR_DATE_PREFIX.exec(trimmed);
+  if (!match) {
+    throw new RangeError(`Invalid calendar date: "${value}"`);
+  }
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
+  const date = new Date(y, m - 1, d);
+  if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) {
+    throw new RangeError(`Invalid calendar date: "${value}"`);
+  }
+  return date;
 }
 
-export const fmtShortDate = (value: string) => format(parseCalendarDate(value), "MMM d");
-export const fmtLongDate = (value: string) => format(parseCalendarDate(value), "EEE, MMM d, yyyy");
-export const fmtDayHeading = (value: string) => format(parseCalendarDate(value), "EEEE, MMMM d");
+function formatCalendarDate(
+  value: string | null | undefined,
+  pattern: string,
+  formatterName: string,
+): string {
+  if (value == null || value.trim() === "") return "—";
+  try {
+    return format(parseCalendarDate(value), pattern);
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(`[${formatterName}] invalid date`, { value, error });
+    }
+    return "—";
+  }
+}
+
+export const fmtShortDate = (value: string | null | undefined) =>
+  formatCalendarDate(value, "MMM d", "fmtShortDate");
+export const fmtLongDate = (value: string | null | undefined) =>
+  formatCalendarDate(value, "EEE, MMM d, yyyy", "fmtLongDate");
+export const fmtDayHeading = (value: string | null | undefined) =>
+  formatCalendarDate(value, "EEEE, MMMM d", "fmtDayHeading");
 export const fmtTipoff = (iso: string) => format(parseISO(iso), "h:mm a");
 export const fmtDateTime = (iso: string) => format(parseISO(iso), "MMM d, h:mm a");
 export const fmtRelative = (iso: string) => `${formatDistanceToNowStrict(parseISO(iso))} ago`;
@@ -20,9 +53,22 @@ export function fmtNum(value: number | null | undefined, digits = 1): string {
   return value.toFixed(digits);
 }
 
+function formatPercentPoints(pctPoints: number): string {
+  const rounded = Math.round(pctPoints * 10) / 10;
+  const decimals = rounded % 1 === 0 ? 0 : 1;
+  return `${rounded.toFixed(decimals)}%`;
+}
+
+/** Format analytics hit rates already on a 0–100 scale (e.g. `over_pct`). */
 export function fmtPct(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "—";
-  return `${value.toFixed(value % 1 === 0 ? 0 : 1)}%`;
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return formatPercentPoints(value);
+}
+
+/** Format ML probabilities on a 0–1 scale (e.g. `model_probability`, `p_over`). */
+export function fmtProbability(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return formatPercentPoints(value * 100);
 }
 
 export function fmtHeight(inches: number | null): string | null {

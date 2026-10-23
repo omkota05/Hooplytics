@@ -1,8 +1,4 @@
-"""Interface a future model-backed prediction service will implement.
-
-Nothing here produces predictions yet; the API exposes no prediction endpoints until a
-trained, backtested model exists.
-"""
+"""Prediction contracts shared by the ML engine and API."""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -25,9 +21,9 @@ class StatProjection:
 class LineProbability:
     projection: StatProjection
     line: float
-    p_over: float
-    p_under: float
-    p_push: float
+    p_over: float | None
+    p_under: float | None
+    p_push: float | None
 
 
 class StatPredictor(Protocol):

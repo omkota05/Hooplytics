@@ -10,11 +10,12 @@ from sqlalchemy.exc import OperationalError
 from app.analytics.categories import UnknownCategoryError
 from app.analytics.lines import InvalidLineError
 from app.analytics.windows import InvalidWindowError
-from app.api.routes import games, players, stats, sync
+from app.api.routes import games, players, predictions, recommendations, stats, sync
 from app.config import get_settings
 from app.db import DatabaseNotConfiguredError, get_engine
 from app.logging_config import configure_logging
 from app.services.errors import BadRequestError, NotFoundError
+from app.services.prediction_service import ModelNotReadyError
 from app.sync.scheduler import SyncScheduler
 
 logger = logging.getLogger("hooplytics")
@@ -68,6 +69,11 @@ async def bad_request(_: Request, exc: Exception):
     return _error(400, str(exc))
 
 
+@app.exception_handler(ModelNotReadyError)
+async def model_not_ready(_: Request, exc: ModelNotReadyError):
+    return _error(503, str(exc))
+
+
 @app.exception_handler(OperationalError)
 async def db_unavailable(_: Request, exc: OperationalError):
     logger.error("Database error: %s", exc.orig)
@@ -79,5 +85,12 @@ def health():
     return {"status": "ok"}
 
 
-for router in (players.router, games.router, stats.router, sync.router):
+for router in (
+    players.router,
+    games.router,
+    stats.router,
+    sync.router,
+    predictions.router,
+    recommendations.router,
+):
     app.include_router(router, prefix="/api")

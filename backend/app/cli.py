@@ -6,6 +6,9 @@ python -m app.cli backfill --season 2025 --max-games 200
 python -m app.cli backfill --retry-failed   # retry box scores the provider failed to serve
 python -m app.cli status
 python -m app.cli export-dataset out.parquet
+python -m app.cli ml-train
+python -m app.cli ml-metrics
+python -m app.cli ml-predict --player-id 1 --game-id 2 --stat pts --line 19.5
 """
 
 import json
@@ -129,6 +132,94 @@ def export_dataset(output: Path = typer.Argument(..., help=".parquet or .csv pat
         else:
             frame.to_csv(output, index=False)
         typer.echo(f"Wrote {len(frame)} rows to {output}")
+
+    _run(go)
+
+
+@cli.command("ml-train")
+def ml_train(version: str = typer.Option(None, help="Optional artifact version label")) -> None:
+    """Train XGBoost player-stat models from synced history."""
+    from app.ml.inference import reset_prediction_engine
+    from app.ml.training import train_all
+
+    def go():
+        with session_scope() as session:
+            out = train_all(session, version=version)
+        reset_prediction_engine()
+        typer.echo(f"Trained models saved to {out}")
+
+    _run(go)
+
+
+@cli.command("ml-metrics")
+def ml_metrics(version: str = typer.Option(None, help="Artifact version (default: active)")) -> None:
+    """Print backtest metrics for trained models."""
+    from app.ml.backtest import print_metrics_report
+
+    def go():
+        typer.echo(print_metrics_report(version))
+
+    _run(go)
+
+
+@cli.command("ml-train-games")
+def ml_train_games(version: str = typer.Option(None, help="Optional artifact version label")) -> None:
+    """Train game-winner models from synced game history."""
+    from app.ml.game_winner.training import train_game_winner
+    from app.services.prediction_service import reload_all_prediction_models
+
+    def go():
+        with session_scope() as session:
+            out = train_game_winner(session, version=version)
+        reload_all_prediction_models()
+        typer.echo(f"Game-winner models saved to {out}")
+
+    _run(go)
+
+
+@cli.command("ml-metrics-games")
+def ml_metrics_games(version: str = typer.Option(None, help="Artifact version (default: active)")) -> None:
+    """Print held-out metrics for the game-winner model."""
+    import json
+
+    from app.ml.game_winner.artifacts import load_game_winner_bundle
+
+    def go():
+        bundle = load_game_winner_bundle(version)
+        typer.echo(json.dumps(bundle.metrics, indent=2))
+
+    _run(go)
+
+
+@cli.command("ml-predict-game")
+def ml_predict_game(game_id: int = typer.Option(..., "--game-id")) -> None:
+    """Predict home-team win probability for one game."""
+    from app.services.prediction_service import predict_game_outcome
+
+    def go():
+        with session_scope() as session:
+            out = predict_game_outcome(session, game_id=game_id)
+        typer.echo(out.model_dump_json(indent=2))
+
+    _run(go)
+
+
+@cli.command("ml-predict")
+def ml_predict(
+    player_id: int = typer.Option(..., "--player-id"),
+    game_id: int = typer.Option(..., "--game-id"),
+    stat: str = typer.Option("pts", "--stat"),
+    line: float = typer.Option(19.5, "--line"),
+) -> None:
+    """Generate a prediction for one player/game."""
+    from app.services.prediction_service import predict_player_stat
+
+    def go():
+        with session_scope() as session:
+            out = predict_player_stat(
+                session, player_id=player_id, game_id=game_id, category_key=stat, line=line
+            )
+        typer.echo(out.model_dump_json(indent=2))
 
     _run(go)
 

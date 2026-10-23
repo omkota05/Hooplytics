@@ -314,3 +314,122 @@ export interface TrendExplorer {
   rows: TrendRow[];
   note: string;
 }
+
+export interface HistoricalWindowHit {
+  window: "L5" | "L10" | "L20";
+  games: number;
+  over_pct: number | null;
+  under_pct: number | null;
+  small_sample: boolean;
+}
+
+export interface PlayerPropRecommendation {
+  player: PlayerSummary;
+  opponent: Team;
+  game: Game;
+  category: string;
+  category_label: string;
+  line: number;
+  line_source: string;
+  predicted_mean: number;
+  predicted_std_dev: number;
+  pick_side: "over" | "under";
+  model_probability: number;
+  p_over: number | null;
+  p_under: number | null;
+  probability_status: "available" | "experimental" | "unavailable";
+  games_used: number;
+  historical_hit_rates: HistoricalWindowHit[];
+  model_version: string;
+  player_analysis_href: string;
+}
+
+export interface GameWinnerWarning {
+  code: string;
+  message: string;
+}
+
+export interface GameWinnerFactors {
+  home_elo: number;
+  away_elo: number;
+  elo_home_win_prob: number;
+  home_win_pct_season: number;
+  away_win_pct_season: number;
+  home_rest_days: number;
+  away_rest_days: number;
+  home_b2b: boolean;
+  away_b2b: boolean;
+  h2h_home_win_pct: number;
+  neutral_site: boolean;
+  games_before_home?: number;
+  games_before_away?: number;
+}
+
+export interface GameWinnerRecommendation {
+  game: Game;
+  home_win_probability: number;
+  away_win_probability: number;
+  model_home_win_probability_raw: number;
+  calibration_applied: boolean;
+  elo_home_win_probability: number;
+  predicted_winner_team_id: number;
+  selected_model: string;
+  model_version: string;
+  probability_status: "available" | "experimental" | "unavailable";
+  factors: GameWinnerFactors;
+  warnings: GameWinnerWarning[];
+  matchup_href: string;
+}
+
+export interface RecommendationsPipeline {
+  upcoming_games: number;
+  rotation_player_slots: number;
+  ml_prop_attempts: number;
+  props_skipped_no_line: number;
+  props_skipped_ml: number;
+  props_candidates_before_dedupe: number;
+  props_after_dedupe: number;
+  props_filtered_by_query: number;
+  player_game_prepares: number;
+}
+
+export interface RecommendationsMeta {
+  generated_at: string;
+  player_model_version: string | null;
+  game_winner_model_version: string | null;
+  upcoming_games_scanned: number;
+  player_props_generated: number;
+  game_winners_generated: number;
+  data_sync_reference: string | null;
+  disclaimer: string;
+  pipeline: RecommendationsPipeline;
+  generation_ms?: number | null;
+}
+
+export interface Recommendations {
+  meta: RecommendationsMeta;
+  player_props: PlayerPropRecommendation[];
+  game_winners: GameWinnerRecommendation[];
+  categories: string[];
+  errors: string[];
+}
+
+export interface PlayerStatPrediction {
+  player_id: number;
+  player_name: string;
+  game_id: number;
+  opponent_team_id: number;
+  category: string;
+  category_label: string;
+  line: number;
+  predicted_mean: number;
+  predicted_std_dev: number;
+  p_over: number | null;
+  p_under: number | null;
+  p_push: number | null;
+  probability_status: string;
+  model_version: string;
+  selected_model_summary: string;
+  predicted_at: string;
+  disclaimer: string;
+}

@@ -47,7 +47,7 @@ def add_point_in_time_features(frame: pd.DataFrame) -> pd.DataFrame:
     if frame.empty:
         return frame
     frame = frame.sort_values(["player_id", "start_time"]).reset_index(drop=True)
-    frame["game_date"] = pd.to_datetime(frame["game_date"])
+    frame["game_date"] = pd.to_datetime(frame["game_date"]).dt.normalize()
     played = frame[~frame["did_not_play"]].copy()
     grouped = played.groupby("player_id", sort=False)
 

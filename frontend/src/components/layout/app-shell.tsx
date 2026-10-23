@@ -14,7 +14,7 @@ const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/players", label: "Players", icon: Users },
   { href: "/matchups", label: "Matchups", icon: CalendarDays },
-  { href: "/picks", label: "Picks", icon: Sparkles },
+  { href: "/recommended", label: "Recommended", icon: Sparkles },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -59,11 +59,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 <Icon className={cn("size-4", active ? "text-electric" : "group-hover:text-foreground")} />
                 {label}
-                {label === "Picks" && (
-                  <span className="ml-auto rounded-md bg-violet/20 px-1.5 py-0.5 text-[10px] font-semibold text-violet">
-                    SOON
-                  </span>
-                )}
               </Link>
             );
           })}
@@ -71,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mt-auto space-y-3">
           <SyncIndicator />
           <p className="px-1 text-[11px] leading-relaxed text-muted-foreground/70">
-            Historical stats only. Nothing here is a prediction or betting advice.
+            Model outputs are experimental analytics, not betting advice.
           </p>
         </div>
       </aside>

@@ -21,10 +21,12 @@ export function PlayerProfileView({
   playerId,
   initialStat,
   initialOpponentId,
+  initialLine,
 }: {
   playerId: number;
   initialStat?: string;
   initialOpponentId: number | null;
+  initialLine?: number;
 }) {
   const [season, setSeason] = useState<number | undefined>(undefined);
   const profile = useSWR(["profile", playerId, season], () => api.playerProfile(playerId, season), {
@@ -66,6 +68,7 @@ export function PlayerProfileView({
           teams={teams.data}
           initialStat={initialStat}
           initialOpponentId={initialOpponentId}
+          initialLine={initialLine}
         />
       ) : (
         <Skeleton className="h-[520px] rounded-2xl bg-secondary/40" />

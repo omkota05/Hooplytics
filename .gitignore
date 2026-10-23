@@ -22,6 +22,9 @@ frontend/next-env.d.ts
 *.parquet
 player_games.csv
 
+# Trained ML artifacts (regenerate with make ml-train)
+backend/artifacts/
+
 # OS / editor
 .DS_Store
 .idea/

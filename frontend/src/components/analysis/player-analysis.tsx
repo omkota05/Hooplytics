@@ -69,17 +69,21 @@ export function PlayerAnalysis({
   teams,
   initialStat = "pts",
   initialOpponentId = null,
+  initialLine,
 }: {
   profile: PlayerProfile;
   categories: StatCategory[];
   teams: Team[];
   initialStat?: string;
   initialOpponentId?: number | null;
+  initialLine?: number;
 }) {
   const playerId = profile.player.id;
   const categoryByKey = useMemo(() => new Map(categories.map((c) => [c.key, c])), [categories]);
   const [stat, setStat] = useState(categoryByKey.has(initialStat) ? initialStat : "pts");
-  const [line, setLine] = useState(() => suggestedLine(categoryByKey.get(stat), profile));
+  const [line, setLine] = useState(
+    () => initialLine ?? suggestedLine(categoryByKey.get(stat), profile),
+  );
   const [opponentId, setOpponentId] = useState<number | null>(initialOpponentId);
   const [generalWindow, setGeneralWindow] = useState<GeneralWindow>("l10");
   const [h2hWindow, setH2hWindow] = useState<H2HWindow>("h5");

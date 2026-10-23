@@ -5,9 +5,9 @@ stats against a custom line, check head-to-head history against any opponent, an
 games. Data comes from ESPN's public JSON API, is stored in PostgreSQL by a FastAPI sync service, and
 is served to a Next.js frontend.
 
-> Hooplytics only shows **historical results**. It does not make predictions, offer betting lines or
-> injury reports, or give betting advice. The Picks page is a historical trend explorer until a real,
-> validated ML model exists (see [ML roadmap](#ml-roadmap)).
+> Hooplytics shows **historical results** everywhere in the explorer UI. The backend also exposes an
+> optional **player stat prediction API** (`/api/predictions/player-stat`) after you run `make ml-train`.
+> Predictions are statistical estimates, not betting advice. The Recommended Picks UI is still not built.
 
 ## Quick start (macOS)
 
@@ -54,6 +54,9 @@ not running, `make dev` launches it and waits.
 | `make lint` / `make typecheck` / `make build` | Ruff + ESLint, TypeScript, Next.js production build |
 | `make check` | Lint, type check, and test |
 | `make export-dataset out=x.csv` | Export the point-in-time ML feature table |
+| `make ml-train` | Train player stat models from synced history |
+| `make ml-metrics` | Show chronological backtest MAE/RMSE |
+| `make ml-predict` | CLI prediction (`player=`, `game=`, `stat=`, `line=`) |
 | `make db-reset` | Delete all local data (asks for confirmation) |
 
 The backend CLI has more options: `cd backend && .venv/bin/python -m app.cli --help`
