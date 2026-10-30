@@ -70,6 +70,8 @@ export function PlayerAnalysis({
   initialStat = "pts",
   initialOpponentId = null,
   initialLine,
+  lockStat = false,
+  lockLine = false,
 }: {
   profile: PlayerProfile;
   categories: StatCategory[];
@@ -77,6 +79,8 @@ export function PlayerAnalysis({
   initialStat?: string;
   initialOpponentId?: number | null;
   initialLine?: number;
+  lockStat?: boolean;
+  lockLine?: boolean;
 }) {
   const playerId = profile.player.id;
   const categoryByKey = useMemo(() => new Map(categories.map((c) => [c.key, c])), [categories]);
@@ -152,13 +156,19 @@ export function PlayerAnalysis({
       </div>
 
       <div className="space-y-4 border-b border-border px-5 py-4">
-        <StatPicker categories={categories} value={stat} onChange={changeStat} />
+        {!lockStat && <StatPicker categories={categories} value={stat} onChange={changeStat} />}
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1">
             <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
               Line
             </span>
-            <LineInput value={line} onChange={setLine} />
+            {lockLine ? (
+              <span className="flex h-10 items-center rounded-xl border border-border bg-secondary/30 px-3 text-sm font-semibold tabular">
+                {line}
+              </span>
+            ) : (
+              <LineInput value={line} onChange={setLine} />
+            )}
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">

@@ -1,0 +1,69 @@
+{
+  "success": true,
+  "data": {
+    "lastUpdated": 1760000000000,
+    "odds": {
+      "1": {
+        "leagueId": 1,
+        "periodTypes": {
+          "1": {
+            "periodTypeId": 1,
+            "pregame": {
+              "evt1": {
+                "eventId": 9001,
+                "eventName": "LAL @ BOS",
+                "betTypeId": 101,
+                "sides": {
+                  "0": {
+                    "sideIndex": 0,
+                    "sideName": "Over",
+                    "personId": 555,
+                    "marketSourceLines": {
+                      "10": {
+                        "marketSourceId": 10,
+                        "marketLineId": 10001,
+                        "statusId": 1,
+                        "disabled": false,
+                        "points": 24.5,
+                        "price": -110,
+                        "deepLink": "https://gambly.com/example?foo=1",
+                        "modifiedOn": 1760000000000,
+                        "alternateLines": {
+                          "alt1": {
+                            "marketSourceId": 10,
+                            "statusId": 1,
+                            "disabled": false,
+                            "points": 29.5,
+                            "price": 140,
+                            "deepLink": "https://gambly.com/alt"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "1": {
+                    "sideIndex": 1,
+                    "sideName": "Under",
+                    "personId": 555,
+                    "marketSourceLines": {
+                      "10": {
+                        "marketSourceId": 10,
+                        "marketLineId": 10002,
+                        "statusId": 1,
+                        "disabled": false,
+                        "points": 24.5,
+                        "price": -105
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "live": {}
+          }
+        }
+      }
+    }
+  },
+  "messages": []
+}

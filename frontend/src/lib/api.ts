@@ -14,6 +14,13 @@ import type {
   Team,
   TopPerformer,
   Recommendations,
+  ParlaySearchRequest,
+  ParlaySearchResult,
+  PropAnalyzer,
+  PropFinderDetail,
+  PropFinderList,
+  PlayerOpportunity,
+  PropImportStatus,
   PlayerStatPrediction,
   TrendExplorer,
   WindowKind,
@@ -116,6 +123,11 @@ export const api = {
     }),
   playerProfile: (id: number, season?: number) =>
     request<PlayerProfile>(`/players/${id}`, { season }),
+  playerOpportunity: (id: number, q?: { season?: number; beforeGameId?: number }) =>
+    request<PlayerOpportunity>(`/players/${id}/opportunity`, {
+      season: q?.season,
+      before_game_id: q?.beforeGameId,
+    }),
   gameLogs: (id: number, limit = 25, season?: number) =>
     request<GameLogEntry[]>(`/players/${id}/game-logs`, { limit, season }),
   statAnalysis: (id: number, q: AnalysisQuery) =>
@@ -184,6 +196,61 @@ export const api = {
       game_id: q.gameId,
       category: q.category,
       line: q.line,
+    }),
+  propFinderStatus: () => request<PropImportStatus>("/prop-finder/status"),
+  refreshPropOdds: () =>
+    request<PropImportStatus>("/prop-finder/import", undefined, { method: "POST" }),
+  propFinder: (q: {
+    sportsbook?: string;
+    gameId?: number;
+    playerId?: number;
+    teamId?: number;
+    category?: string;
+    pickSide?: "over" | "under";
+    gameDate?: string;
+    minHitPct?: number;
+    minGames?: number;
+    minSample?: number;
+    sort?: string;
+    limit?: number;
+    offset?: number;
+  }) =>
+    request<PropFinderList>("/prop-finder", {
+      sportsbook: q.sportsbook,
+      game_id: q.gameId,
+      player_id: q.playerId,
+      team_id: q.teamId,
+      category: q.category,
+      pick_side: q.pickSide,
+      game_date: q.gameDate,
+      min_hit_pct: q.minHitPct,
+      min_games: q.minGames,
+      min_sample: q.minSample,
+      sort: q.sort ?? "hcs",
+      limit: q.limit ?? 10,
+      offset: q.offset ?? 0,
+    }),
+  propFinderDetail: (id: number) => request<PropFinderDetail>(`/prop-finder/${id}`),
+  propFinderAnalyzer: (id: number) => request<PropAnalyzer>(`/prop-finder/${id}/analyzer`),
+  parlaySearch: (body: ParlaySearchRequest) =>
+    request<ParlaySearchResult>("/parlay-builder/search", undefined, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }, 60_000),
+  propFinderManual: (body: {
+    player_id: number;
+    game_id: number;
+    category_key: string;
+    line: number;
+    pick_side: "over" | "under";
+    american_odds?: number;
+    sportsbook_label?: string;
+  }) =>
+    request<PropFinderDetail>("/prop-finder/manual", undefined, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     }),
   trends: (q: {
     stat: string;

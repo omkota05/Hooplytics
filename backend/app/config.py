@@ -33,6 +33,23 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
 
+    unabated_api_key: str = ""
+    unabated_partner_code: str = ""
+    unabated_api_base_url: str = ""
+    unabated_min_request_interval_seconds: float = Field(default=5.0, ge=5.0)
+    unabated_timeout_seconds: float = Field(default=25.0, ge=1)
+    prop_odds_sync_on_startup: bool = True
+    prop_odds_sync_interval_minutes: int = Field(default=15, ge=5)
+
+    enable_ml_recommendations: bool = Field(
+        default=False,
+        description="When false, /api/recommendations is disabled and sync will not warm ML recommendation cache.",
+    )
+    enable_probability_calibration: bool = Field(
+        default=False,
+        description="When false, no Beta-calibrated win probabilities or EV are shown.",
+    )
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

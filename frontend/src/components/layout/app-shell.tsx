@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, LayoutDashboard, Sparkles, Users } from "lucide-react";
+import { CalendarDays, Layers, LayoutDashboard, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -14,7 +14,8 @@ const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/players", label: "Players", icon: Users },
   { href: "/matchups", label: "Matchups", icon: CalendarDays },
-  { href: "/recommended", label: "Recommended", icon: Sparkles },
+  { href: "/prop-finder", label: "Prop Finder", icon: TrendingUp },
+  { href: "/parlay-builder", label: "Parlay Builder", icon: Layers },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -66,7 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mt-auto space-y-3">
           <SyncIndicator />
           <p className="px-1 text-[11px] leading-relaxed text-muted-foreground/70">
-            Model outputs are experimental analytics, not betting advice.
+            Historical analytics only — not betting advice.
           </p>
         </div>
       </aside>

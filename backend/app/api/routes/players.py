@@ -8,12 +8,14 @@ from app.analytics.windows import GameWindow
 from app.db import get_db
 from app.schemas.analysis import MatchupComparisonOut, StatAnalysisOut
 from app.schemas.common import Page, PlayerSummaryOut
+from app.schemas.opportunity import PlayerOpportunityOut
 from app.schemas.players import (
     DirectoryRowOut,
     GameLogEntryOut,
     PlayerProfileOut,
     SeasonAveragesOut,
 )
+from app.services.opportunity_service import build_opportunity
 from app.services import analysis_service, player_service
 from app.services.errors import NotFoundError
 
@@ -63,6 +65,26 @@ def get_season_averages(db: Db, player_id: int, season: int):
     if averages is None:
         raise NotFoundError(f"No games for player {player_id} in season {season}")
     return averages
+
+
+@router.get("/{player_id}/opportunity", response_model=PlayerOpportunityOut)
+def get_player_opportunity(
+    db: Db,
+    player_id: int,
+    season: int | None = None,
+    before_game_id: int | None = None,
+):
+    """Minutes / FGA / 3PA trends from synced box scores."""
+    before_start = None
+    if before_game_id is not None:
+        from app.models import Game
+
+        game = db.get(Game, before_game_id)
+        if game is None:
+            raise NotFoundError(f"Game {before_game_id} not found")
+        before_start = game.start_time
+        season = season or game.season
+    return build_opportunity(db, player_id, before_start=before_start, season=season)
 
 
 @router.get("/{player_id}/game-logs", response_model=list[GameLogEntryOut])

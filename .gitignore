@@ -4,6 +4,10 @@
 backend/.env
 frontend/.env.local
 
+# Environment variables and secrets
+.env.*
+!.env.example
+
 # Python
 backend/.venv/
 __pycache__/
@@ -21,6 +25,7 @@ frontend/next-env.d.ts
 # Data exports
 *.parquet
 player_games.csv
+research_export/
 
 # Trained ML artifacts (regenerate with make ml-train)
 backend/artifacts/

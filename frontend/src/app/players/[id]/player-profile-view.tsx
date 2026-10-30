@@ -6,6 +6,7 @@ import { useState } from "react";
 import useSWR from "swr";
 
 import { PlayerAnalysis } from "@/components/analysis/player-analysis";
+import { PlayerOpportunitySection } from "@/components/analysis/player-opportunity-section";
 import { PlayerAvatar } from "@/components/common/player-avatar";
 import { Segmented } from "@/components/common/segmented";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/common/states";
@@ -61,15 +62,18 @@ export function PlayerProfileView({
       ) : categories.error || teams.error ? (
         <ErrorState error={categories.error ?? teams.error} title="Could not load filters" />
       ) : categories.data && teams.data ? (
-        <PlayerAnalysis
-          key={playerId}
-          profile={p}
-          categories={categories.data}
-          teams={teams.data}
-          initialStat={initialStat}
-          initialOpponentId={initialOpponentId}
-          initialLine={initialLine}
-        />
+        <>
+          <PlayerOpportunitySection playerId={playerId} />
+          <PlayerAnalysis
+            key={playerId}
+            profile={p}
+            categories={categories.data}
+            teams={teams.data}
+            initialStat={initialStat}
+            initialOpponentId={initialOpponentId}
+            initialLine={initialLine}
+          />
+        </>
       ) : (
         <Skeleton className="h-[520px] rounded-2xl bg-secondary/40" />
       )}

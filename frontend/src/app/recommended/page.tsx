@@ -1,7 +1,5 @@
-"use client";
-
-import { RecommendedView } from "@/components/recommendations/recommended-view";
+import { redirect } from "next/navigation";
 
 export default function RecommendedPage() {
-  return <RecommendedView />;
+  redirect("/prop-finder");
 }

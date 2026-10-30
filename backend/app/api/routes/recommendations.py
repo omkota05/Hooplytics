@@ -1,9 +1,10 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.db import get_db
 from app.schemas.prediction import PlayerStatPredictionOut
 from app.schemas.recommendations import RecommendationsOut
@@ -12,6 +13,14 @@ from app.services.recommendation_service import filter_recommendations, generate
 
 router = APIRouter(tags=["recommendations"])
 Db = Annotated[Session, Depends(get_db)]
+
+
+def _require_ml_enabled() -> None:
+    if not get_settings().enable_ml_recommendations:
+        raise HTTPException(
+            status_code=403,
+            detail="ML recommendations are temporarily disabled. Use Prop Finder or Parlay Builder for historical analysis.",
+        )
 
 
 @router.get("/recommendations", response_model=RecommendationsOut)
@@ -28,6 +37,7 @@ def list_recommendations(
     game_date: date | None = None,
     sort: Annotated[str, Query(pattern="^(probability|time|player)$")] = "probability",
 ):
+    _require_ml_enabled()
     bundle = generate_recommendations(db, days=days, expand_player_props=expand_player_props)
     return filter_recommendations(
         bundle,
@@ -51,4 +61,5 @@ def recommendation_custom_player_prop(
     line: Annotated[float, Query(ge=0, le=200)],
 ):
     """Custom-line ML prediction (sportsbook lines not available)."""
+    _require_ml_enabled()
     return predict_player_stat(db, player_id=player_id, game_id=game_id, category_key=category, line=line)

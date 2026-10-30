@@ -48,7 +48,18 @@ def client(session_factory):
     app.dependency_overrides.clear()
 
 
+def test_recommendations_disabled_by_default(client):
+    r = client.get("/api/recommendations")
+    assert r.status_code == 403
+
+
 def test_last_n_analysis(client):
+    r = client.get(f"/api/players/{STAR}/opportunity")
+    assert r.status_code == 200
+    opp = r.json()
+    assert opp["l5"]["games"] <= 5
+    assert "trends" in opp
+
     r = client.get(f"/api/players/{STAR}/stat-analysis", params={"stat": "pts", "line": 20, "n": 4})
     assert r.status_code == 200
     body = r.json()

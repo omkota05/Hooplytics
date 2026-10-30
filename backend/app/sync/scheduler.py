@@ -83,7 +83,7 @@ class SyncScheduler:
                 run.games_updated,
                 run.boxscores_synced,
             )
-            if run.status in ("success", "partial"):
+            if run.status in ("success", "partial") and self._settings.enable_ml_recommendations:
                 from app.services.recommendation_cache import warm_recommendations_async
 
                 warm_recommendations_async()

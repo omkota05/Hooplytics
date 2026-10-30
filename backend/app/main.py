@@ -10,12 +10,13 @@ from sqlalchemy.exc import OperationalError
 from app.analytics.categories import UnknownCategoryError
 from app.analytics.lines import InvalidLineError
 from app.analytics.windows import InvalidWindowError
-from app.api.routes import games, players, predictions, recommendations, stats, sync
+from app.api.routes import games, parlay_builder, players, predictions, prop_finder, recommendations, stats, sync
 from app.config import get_settings
 from app.db import DatabaseNotConfiguredError, get_engine
 from app.logging_config import configure_logging
 from app.services.errors import BadRequestError, NotFoundError
 from app.services.prediction_service import ModelNotReadyError
+from app.sync.odds_scheduler import OddsImportScheduler
 from app.sync.scheduler import SyncScheduler
 
 logger = logging.getLogger("hooplytics")
@@ -36,11 +37,26 @@ async def lifespan(app: FastAPI):
             f"(`make migrate`). Underlying error: {exc}"
         ) from exc
 
+    try:
+        from app.db import session_scope
+        from app.services.prop_offer_maintenance import deactivate_past_game_offers
+
+        with session_scope() as session:
+            n = deactivate_past_game_offers(session)
+            if n:
+                logger.info("Deactivated %s past-game prop offers on startup", n)
+    except Exception:
+        logger.exception("Prop offer startup maintenance failed (non-fatal)")
+
     scheduler = SyncScheduler(settings)
     app.state.scheduler = scheduler
     scheduler.start()
+    odds_scheduler = OddsImportScheduler(settings)
+    app.state.odds_scheduler = odds_scheduler
+    odds_scheduler.start()
     yield
     scheduler.stop()
+    odds_scheduler.stop()
 
 
 app = FastAPI(title="Hooplytics API", version="0.1.0", lifespan=lifespan)
@@ -92,5 +108,7 @@ for router in (
     sync.router,
     predictions.router,
     recommendations.router,
+    prop_finder.router,
+    parlay_builder.router,
 ):
     app.include_router(router, prefix="/api")

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function PicksRedirect() {
-  redirect("/recommended");
+export default function PicksPage() {
+  redirect("/prop-finder");
 }
