@@ -19,6 +19,7 @@ import type {
   PropAnalyzer,
   PropFinderDetail,
   PropFinderList,
+  HitStreakList,
   PlayerOpportunity,
   PropImportStatus,
   PlayerStatPrediction,
@@ -232,6 +233,26 @@ export const api = {
     }),
   propFinderDetail: (id: number) => request<PropFinderDetail>(`/prop-finder/${id}`),
   propFinderAnalyzer: (id: number) => request<PropAnalyzer>(`/prop-finder/${id}/analyzer`),
+  hitStreaks: (q: {
+    category?: string;
+    pickSide?: "over" | "under";
+    gameDate?: string;
+    minStreak?: number;
+    currentSeasonOnly?: boolean;
+    sort?: string;
+    limit?: number;
+    offset?: number;
+  }) =>
+    request<HitStreakList>("/hit-streaks", {
+      category: q.category,
+      pick_side: q.pickSide,
+      game_date: q.gameDate,
+      min_streak: q.minStreak ?? 1,
+      current_season_only: q.currentSeasonOnly ?? false,
+      sort: q.sort ?? "streak",
+      limit: q.limit ?? 100,
+      offset: q.offset ?? 0,
+    }),
   parlaySearch: (body: ParlaySearchRequest) =>
     request<ParlaySearchResult>("/parlay-builder/search", undefined, {
       method: "POST",

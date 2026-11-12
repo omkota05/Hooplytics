@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Layers, LayoutDashboard, TrendingUp, Users } from "lucide-react";
+import { CalendarDays, Flame, Layers, LayoutDashboard, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -15,6 +15,7 @@ const NAV = [
   { href: "/players", label: "Players", icon: Users },
   { href: "/matchups", label: "Matchups", icon: CalendarDays },
   { href: "/prop-finder", label: "Prop Finder", icon: TrendingUp },
+  { href: "/hit-streaks", label: "Hit Streaks", icon: Flame },
   { href: "/parlay-builder", label: "Parlay Builder", icon: Layers },
 ];
 

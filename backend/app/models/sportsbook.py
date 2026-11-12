@@ -57,6 +57,35 @@ class UnabatedIdentityMapping(Base):
     )
 
 
+class PropHitStreakCache(Base):
+    __tablename__ = "prop_hit_streak_cache"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id"), nullable=False)
+    before_game_id: Mapped[int] = mapped_column(ForeignKey("games.id"), nullable=False)
+    category_key: Mapped[str] = mapped_column(String(24), nullable=False)
+    line: Mapped[float] = mapped_column(Float, nullable=False)
+    pick_side: Mapped[str] = mapped_column(String(8), nullable=False)
+    current_season_only: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    streak_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    data_sync_reference: Mapped[str | None] = mapped_column(String(64))
+
+    __table_args__ = (
+        UniqueConstraint(
+            "player_id",
+            "before_game_id",
+            "category_key",
+            "line",
+            "pick_side",
+            "current_season_only",
+            name="uq_prop_hit_streak_cache_key",
+        ),
+        Index("ix_prop_hit_streak_cache_player", "player_id"),
+        Index("ix_prop_hit_streak_cache_game", "before_game_id"),
+    )
+
+
 class PropLineHitCache(Base):
     __tablename__ = "prop_line_hit_cache"
 

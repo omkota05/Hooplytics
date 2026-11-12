@@ -16,6 +16,7 @@ from app.schemas.prop_analyzer import PropAnalyzerGameRowOut, PropAnalyzerOut
 from app.services.analysis_service import compare_with_opponent
 from app.services.errors import NotFoundError
 from app.services.opportunity_service import build_opportunity
+from app.services.hit_streaks_service import streak_for_offer
 from app.services.prop_finder_service import get_prop_detail
 from app.services.serializers import team_out
 
@@ -111,4 +112,14 @@ def get_prop_analyzer(session: Session, prop_id: int) -> PropAnalyzerOut:
             opponent_team_id=None,
         )
 
-    return PropAnalyzerOut(prop=prop, opportunity=opportunity, matchup=matchup, game_log=game_log)
+    hit_streak = None
+    if offer.player_id and offer.match_status == "matched":
+        hit_streak = streak_for_offer(session, offer, current_season_only=False)
+
+    return PropAnalyzerOut(
+        prop=prop,
+        opportunity=opportunity,
+        matchup=matchup,
+        game_log=game_log,
+        hit_streak=hit_streak,
+    )

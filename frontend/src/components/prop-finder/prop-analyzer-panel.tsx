@@ -194,6 +194,51 @@ export function PropAnalyzerPanel({ propId, onClose }: { propId: number; onClose
 
           {prop?.hcs_breakdown && <HcsBreakdownCard breakdown={prop.hcs_breakdown} />}
 
+          {analyzer.data?.hit_streak && (
+            <section className="rounded-xl border border-border p-4">
+              <h3 className="mb-2 text-sm font-semibold">Current hit streak</h3>
+              <div className="flex flex-wrap items-baseline gap-3">
+                <span className="text-3xl font-bold tabular text-electric">
+                  {analyzer.data.hit_streak.streak_label}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  consecutive {prop?.pick_side} hits vs {prop?.line} (appearances only)
+                </span>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                <div className="rounded-lg bg-secondary/40 px-3 py-2">
+                  <p className="text-[10px] uppercase text-muted-foreground">L10 record</p>
+                  <p className="font-semibold tabular">{analyzer.data.hit_streak.l10_record}</p>
+                </div>
+                <div className="rounded-lg bg-secondary/40 px-3 py-2">
+                  <p className="text-[10px] uppercase text-muted-foreground">Avg clearance</p>
+                  <p className="font-semibold tabular">
+                    {analyzer.data.hit_streak.avg_clearance_margin != null
+                      ? fmtNum(analyzer.data.hit_streak.avg_clearance_margin, 2)
+                      : "—"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-secondary/40 px-3 py-2">
+                  <p className="text-[10px] uppercase text-muted-foreground">Games evaluated</p>
+                  <p className="font-semibold tabular">{analyzer.data.hit_streak.games_evaluated}</p>
+                </div>
+                <div className="rounded-lg bg-secondary/40 px-3 py-2">
+                  <p className="text-[10px] uppercase text-muted-foreground">Last game</p>
+                  <p className="font-semibold tabular">
+                    {analyzer.data.hit_streak.last_completed_game_date
+                      ? fmtShortDate(analyzer.data.hit_streak.last_completed_game_date)
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+              {analyzer.data.hit_streak.streak_at_least && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Streak may extend further — available history ends while still hitting.
+                </p>
+              )}
+            </section>
+          )}
+
           {prop && windows.length > 0 && (
             <section>
               <h3 className="mb-3 text-sm font-semibold">Historical hit rates vs {prop.line} line</h3>

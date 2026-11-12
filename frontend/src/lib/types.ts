@@ -568,6 +568,65 @@ export interface PlayerOpportunity {
   disclaimer: string;
 }
 
+export interface HitStreakGameResult {
+  game_id: number;
+  game_date: string;
+  opponent_abbreviation: string | null;
+  stat_value: number | null;
+  outcome: "over" | "under" | "push" | null;
+  bet_result: "hit" | "miss" | "push" | null;
+}
+
+export interface HitStreakSummary {
+  current_streak: number;
+  streak_at_least: boolean;
+  streak_label: string;
+  avg_clearance_margin: number | null;
+  games_evaluated: number;
+  last_completed_game_date: string | null;
+  recent_results: HitStreakGameResult[];
+  l5_record: string;
+  l10_record: string;
+  l20_record: string;
+  l5_hit_pct: number | null;
+  l10_hit_pct: number | null;
+  l20_hit_pct: number | null;
+  push_count_in_streak_window: number;
+  missing_data_flags: string[];
+}
+
+export interface HitStreakRow {
+  offer_id: number;
+  player_id: number | null;
+  player_name: string;
+  team_abbreviation: string | null;
+  game_id: number | null;
+  matchup_label: string | null;
+  opponent_abbreviation: string | null;
+  opponent_team_id: number | null;
+  game_start_time: string | null;
+  game_date: string | null;
+  category: StatCategory;
+  line: number;
+  pick_side: "over" | "under";
+  sportsbook: string;
+  hcs_score: number | null;
+  streak: HitStreakSummary;
+}
+
+export interface HitStreakList {
+  rows: HitStreakRow[];
+  total: number;
+  total_available: number;
+  total_eligible_offers: number;
+  limit: number;
+  offset: number;
+  current_season_only: boolean;
+  sort: string;
+  timing_ms: number | null;
+  disclaimer: string;
+}
+
 export interface PropAnalyzerGameRow {
   game_id: number;
   game_date: string;
@@ -588,6 +647,7 @@ export interface PropAnalyzer {
   opportunity: PlayerOpportunity | null;
   matchup: MatchupComparison | null;
   game_log: PropAnalyzerGameRow[];
+  hit_streak: HitStreakSummary | null;
 }
 
 export interface ParlaySearchRequest {

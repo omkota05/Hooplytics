@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.schemas.analysis import MatchupComparisonOut
 from app.schemas.common import TeamOut
 from app.schemas.opportunity import PlayerOpportunityOut
+from app.schemas.hit_streaks import HitStreakSummaryOut
 from app.schemas.prop_finder import PropFinderDetailOut
 
 
@@ -29,3 +30,4 @@ class PropAnalyzerOut(BaseModel):
     opportunity: PlayerOpportunityOut | None = None
     matchup: MatchupComparisonOut | None = None
     game_log: list[PropAnalyzerGameRowOut] = []
+    hit_streak: HitStreakSummaryOut | None = None

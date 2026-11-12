@@ -10,7 +10,7 @@ from sqlalchemy.exc import OperationalError
 from app.analytics.categories import UnknownCategoryError
 from app.analytics.lines import InvalidLineError
 from app.analytics.windows import InvalidWindowError
-from app.api.routes import games, parlay_builder, players, predictions, prop_finder, recommendations, stats, sync
+from app.api.routes import games, hit_streaks, parlay_builder, players, predictions, prop_finder, recommendations, stats, sync
 from app.config import get_settings
 from app.db import DatabaseNotConfiguredError, get_engine
 from app.logging_config import configure_logging
@@ -109,6 +109,7 @@ for router in (
     predictions.router,
     recommendations.router,
     prop_finder.router,
+    hit_streaks.router,
     parlay_builder.router,
 ):
     app.include_router(router, prefix="/api")
