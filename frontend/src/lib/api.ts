@@ -26,6 +26,15 @@ import type {
   TrendExplorer,
   WindowKind,
 } from "./types";
+import type {
+  ComparisonResponse,
+  MlMetrics,
+  MlStatus,
+  PlayerProjection,
+  ProspectiveSummary,
+  PropEstimate,
+  UpcomingProjectionRow,
+} from "./ml-types";
 
 export const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
@@ -102,6 +111,55 @@ export interface AnalysisQuery {
   opponentId?: number | null;
   seasonScope?: SeasonScope;
 }
+
+export const mlApi = {
+  status: () => request<MlStatus>("/ml/status"),
+  metrics: () => request<MlMetrics>("/ml/metrics"),
+  prospective: () => request<ProspectiveSummary>("/ml/prospective"),
+  upcoming: (q: { teamId?: number; q?: string; limit?: number } = {}) =>
+    request<{ rows: UpcomingProjectionRow[]; total: number; model_version: string; batch_seconds: number | null }>(
+      "/ml/projections/upcoming",
+      { team_id: q.teamId, q: q.q, limit: q.limit ?? 100 },
+      undefined,
+      45_000,
+    ),
+  player: (playerId: number, gameId?: number) =>
+    request<PlayerProjection>(`/ml/projections/player/${playerId}`, { game_id: gameId }, undefined, 45_000),
+  prop: (q: { playerId: number; gameId: number; category: string; line: number }) =>
+    request<PropEstimate>("/ml/projections/prop", {
+      player_id: q.playerId,
+      game_id: q.gameId,
+      category: q.category,
+      line: q.line,
+    }),
+  comparison: (q: {
+    prizepicksOnly?: boolean;
+    sportsbook?: string;
+    category?: string;
+    gameDate?: string;
+    q?: string;
+    side?: string;
+    minSample?: number;
+    eligibleOnly?: boolean;
+    limit?: number;
+  }) =>
+    request<ComparisonResponse>(
+      "/ml/comparison",
+      {
+        prizepicks_only: q.prizepicksOnly,
+        sportsbook: q.sportsbook,
+        category: q.category,
+        game_date: q.gameDate,
+        q: q.q,
+        side: q.side,
+        min_sample: q.minSample,
+        eligible_only: q.eligibleOnly,
+        limit: q.limit ?? 150,
+      },
+      undefined,
+      45_000,
+    ),
+};
 
 export const api = {
   searchPlayers: (q: string, limit = 8) =>

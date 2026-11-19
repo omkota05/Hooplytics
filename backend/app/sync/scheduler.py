@@ -83,12 +83,30 @@ class SyncScheduler:
                 run.games_updated,
                 run.boxscores_synced,
             )
-            if run.status in ("success", "partial") and self._settings.enable_ml_recommendations:
+            if run.status in ("success", "partial"):
+                self._settle_odds_archive()
+            if run.status in ("success", "partial") and self._settings.enable_legacy_recommendations:
                 from app.services.recommendation_cache import warm_recommendations_async
 
                 warm_recommendations_async()
         finally:
             provider.close()
+
+    @staticmethod
+    def _settle_odds_archive() -> None:
+        try:
+            from app.db import session_scope
+            from app.services.odds_archive_service import settle_snapshots
+
+            with session_scope() as session:
+                counts = settle_snapshots(session)
+            if counts:
+                logger.info("Settled archived odds snapshots: %s", counts)
+        except Exception:
+            logger.exception("Odds archive settlement failed (non-fatal)")
+        from app.services.forecast_archive_service import run_forecast_cycle
+
+        run_forecast_cycle()
 
     def _backfill_chunk(self) -> bool:
         """Returns True if historical work remains."""

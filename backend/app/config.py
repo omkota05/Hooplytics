@@ -41,9 +41,21 @@ class Settings(BaseSettings):
     prop_odds_sync_on_startup: bool = True
     prop_odds_sync_interval_minutes: int = Field(default=15, ge=5)
 
+    enable_legacy_recommendations: bool = Field(
+        default=False,
+        description="Old v1 /api/recommendations feed and its post-sync cache warm worker (expensive; unvalidated).",
+    )
+    enable_ml_inference: bool = Field(default=True, description="Serve v2 engine projections from saved artifacts.")
+    enable_ml_experimental_ui: bool = Field(
+        default=True, description="Expose ML Lab and the experimental projection-vs-line comparison."
+    )
     enable_ml_recommendations: bool = Field(
         default=False,
-        description="When false, /api/recommendations is disabled and sync will not warm ML recommendation cache.",
+        description="Production Recommended ranking. Also requires a category to pass the archived real-line gate.",
+    )
+    enable_ml_probabilities: bool = Field(
+        default=False,
+        description="Return over/under probabilities. Each category must still pass its validation gate.",
     )
     enable_probability_calibration: bool = Field(
         default=False,

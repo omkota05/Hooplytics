@@ -197,6 +197,53 @@ class PropOffer(Base):
     )
 
 
+class PropOfferSnapshot(Base):
+    """Versioned history of observed sportsbook prices.
+
+    A new row is written only when an offer's price changes (or it is first seen); repeated
+    identical observations extend `last_observed_at`. Observation times are the real import
+    times — rows are never backdated. Settlement fields are filled after the game is final.
+    """
+
+    __tablename__ = "prop_offer_snapshots"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    offer_id: Mapped[int | None] = mapped_column(ForeignKey("prop_offers.id", ondelete="SET NULL"))
+    import_run_id: Mapped[int | None] = mapped_column(ForeignKey("prop_import_runs.id", ondelete="SET NULL"))
+    origin: Mapped[str] = mapped_column(String(32), nullable=False)  # import | prop_offers_last_seen
+    source_kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    sportsbook_label: Mapped[str] = mapped_column(String(80), nullable=False)
+    player_id: Mapped[int | None] = mapped_column(ForeignKey("players.id"))
+    game_id: Mapped[int | None] = mapped_column(ForeignKey("games.id"))
+    category_key: Mapped[str] = mapped_column(String(24), nullable=False)
+    line: Mapped[float] = mapped_column(Float, nullable=False)
+    pick_side: Mapped[str] = mapped_column(String(8), nullable=False)
+    american_odds: Mapped[int | None] = mapped_column(Integer)
+    is_alternate_line: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    unabated_event_id: Mapped[int | None] = mapped_column(BigInteger)
+    unabated_person_id: Mapped[int | None] = mapped_column(BigInteger)
+    unabated_bet_type_id: Mapped[int | None] = mapped_column(Integer)
+    unabated_market_line_id: Mapped[int | None] = mapped_column(BigInteger)
+    game_start_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    line_modified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    first_observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    observation_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    market_status: Mapped[str] = mapped_column(String(16), nullable=False, server_default="open")
+    is_latest: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+    # hit | miss | push | void_dnp | unresolved (NULL until the game is final)
+    result: Mapped[str | None] = mapped_column(String(16))
+    actual_value: Mapped[float | None] = mapped_column(Float)
+    settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        Index("ix_pos_game", "game_id"),
+        Index("ix_pos_player_game_cat", "player_id", "game_id", "category_key"),
+        Index("ix_pos_unsettled", "game_id", postgresql_where=text("result IS NULL")),
+        Index("uq_pos_offer_latest", "offer_id", unique=True, postgresql_where=text("is_latest AND offer_id IS NOT NULL")),
+    )
+
+
 class PropImportRun(Base):
     __tablename__ = "prop_import_runs"
 

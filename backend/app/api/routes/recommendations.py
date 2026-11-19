@@ -16,7 +16,7 @@ Db = Annotated[Session, Depends(get_db)]
 
 
 def _require_ml_enabled() -> None:
-    if not get_settings().enable_ml_recommendations:
+    if not get_settings().enable_legacy_recommendations:
         raise HTTPException(
             status_code=403,
             detail="ML recommendations are temporarily disabled. Use Prop Finder or Parlay Builder for historical analysis.",

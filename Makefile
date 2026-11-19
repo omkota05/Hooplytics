@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 BACKEND := cd backend && .venv/bin
 
-.PHONY: help setup dev db db-stop db-reset migrate migration sync backfill status test lint typecheck build check export-dataset ml-train ml-metrics ml-predict ml-prepare ml-train-games ml-metrics-games ml-predict-game
+.PHONY: help setup dev db db-stop db-reset migrate migration sync backfill status test lint typecheck build check export-dataset ml-train ml-eval ml-status ml-rollback odds-archive ml-forecast ml-research ml-benchmark ml-train-v1 ml-metrics ml-predict ml-prepare ml-train-games ml-metrics-games ml-predict-game
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -42,12 +42,37 @@ export-dataset: ## Export leakage-safe ML feature table: make export-dataset out
 
 ml-prepare: ## Export enriched ML dataset to backend/artifacts/ml/dataset.parquet
 	@mkdir -p backend/artifacts/ml
-	$(BACKEND)/pip install -q -r backend/requirements-ml.txt
+	$(BACKEND)/pip install -q -r requirements-ml.txt
 	$(BACKEND)/python -m app.cli export-dataset backend/artifacts/ml/dataset.parquet
 
-ml-train: ## Train player stat models (needs `make db` and synced history)
-	$(BACKEND)/pip install -q -r backend/requirements-ml.txt
-	$(BACKEND)/python -m app.cli ml-train
+ml-train: ## Train + evaluate the v2 engine; promotes only if acceptance checks pass (~2-3 min)
+	$(BACKEND)/pip install -q -r requirements-ml.txt
+	cd backend && .venv/bin/python -m app.cli ml-train
+
+ml-eval: ## Re-run walk-forward evaluation without promoting
+	cd backend && .venv/bin/python -m app.cli ml-eval
+
+ml-status: ## Active v2 model, gates, health warnings, archive status
+	cd backend && .venv/bin/python -m app.cli ml-status
+
+ml-rollback: ## Restore the previously active v2 model
+	cd backend && .venv/bin/python -m app.cli ml-rollback
+
+odds-archive: ## Settle archived pregame odds snapshots (add backfill=1 to import last-seen pregame lines)
+	cd backend && .venv/bin/python -m app.cli odds-archive $(if $(backfill),--backfill,)
+
+ml-forecast: ## Settle finished forecasts and record pregame forecasts for games in the next 36h
+	cd backend && .venv/bin/python -m app.cli ml-forecast
+
+ml-research: ## Offline validation experiments (bootstrap CIs, walk-forward, intervals) -> artifacts/ml/research
+	cd backend && .venv/bin/python scripts/ml_research.py
+
+ml-benchmark: ## Local performance benchmarks (training, inference, API, features) -> artifacts/ml/research
+	cd backend && .venv/bin/python scripts/ml_benchmark.py
+
+ml-train-v1: ## Legacy v1 player stat models (kept for comparison/rollback)
+	$(BACKEND)/pip install -q -r requirements-ml.txt
+	$(BACKEND)/python -m app.cli ml-train-v1
 
 ml-metrics: ## Show MAE/RMSE backtest metrics for active models
 	$(BACKEND)/python -m app.cli ml-metrics

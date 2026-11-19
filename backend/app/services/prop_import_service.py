@@ -359,6 +359,16 @@ def run_unabated_import(session: Session) -> PropImportRun:
         flush()
         session.flush()
 
+        snapshot_stats: dict[str, int] | str
+        try:
+            from app.services.odds_archive_service import record_import_snapshots
+
+            with session.begin_nested():
+                snapshot_stats = record_import_snapshots(session, import_run_id=run.id, observed_at=import_started)
+        except Exception as exc:  # archive must never break the live Prop Finder import
+            logger.exception("Odds snapshot recording failed (non-fatal)")
+            snapshot_stats = f"failed: {exc}"
+
         stale = session.execute(
             update(PropOffer)
             .where(
@@ -393,6 +403,7 @@ def run_unabated_import(session: Session) -> PropImportRun:
             "deactivated_stale_import": deactivated_stale,
             "deactivated_past_games": deactivated_past,
             "deactivated_duplicates": deduped,
+            "odds_snapshots": snapshot_stats,
             "timing_ms": {
                 "api_setup": int((t_api - t0).total_seconds() * 1000),
                 "props_odds_fetch": int((t_parsed - t_api).total_seconds() * 1000),

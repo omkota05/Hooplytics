@@ -137,8 +137,142 @@ def export_dataset(output: Path = typer.Argument(..., help=".parquet or .csv pat
 
 
 @cli.command("ml-train")
-def ml_train(version: str = typer.Option(None, help="Optional artifact version label")) -> None:
-    """Train XGBoost player-stat models from synced history."""
+def ml_train(
+    quick: bool = typer.Option(False, "--quick", help="Smoke test: subsample train rows, 2 candidates, never promoted"),
+    no_promote: bool = typer.Option(False, "--no-promote", help="Save artifacts without changing ACTIVE"),
+    val_start: str = typer.Option(None, help="Validation start date YYYY-MM-DD"),
+    test_start: str = typer.Option(None, help="Test start date YYYY-MM-DD"),
+) -> None:
+    """Train + evaluate the v2 player-stat engine (offline). Promotes only if acceptance checks pass."""
+    from datetime import date
+
+    from app.ml.engine.service import get_engine_service
+    from app.ml.engine.training import DEFAULT_TEST_START, DEFAULT_VAL_START, train_engine
+
+    def go():
+        with session_scope() as session:
+            out = train_engine(
+                session,
+                val_start=date.fromisoformat(val_start) if val_start else DEFAULT_VAL_START,
+                test_start=date.fromisoformat(test_start) if test_start else DEFAULT_TEST_START,
+                quick=quick,
+                promote_if_valid=not no_promote,
+                progress=typer.echo,
+            )
+        get_engine_service().reset()
+        typer.echo(_format_eval(out["manifest"], out["metrics"]))
+
+    _run(go)
+
+
+def _format_eval(manifest: dict, metrics: dict) -> str:
+    sp = manifest["split"]
+    lines = [
+        f"Model {manifest['version']}  promoted={manifest.get('promoted')}  trained_at={manifest['trained_at']}",
+        f"Train {sp['train_dates']}  Val {sp['val_dates']}  Test {sp['test_dates']}  rows {sp['rows']}",
+        "",
+        f"{'category':12s} {'model MAE':>9s} {'RMSE':>7s} {'best base':>18s} {'L10':>6s} {'season':>7s} {'old v1':>7s} {'Δ vs best':>9s}  selected",
+    ]
+    for cat, d in metrics["test"].items():
+        base = d["baselines"]
+        old = d.get("old_model", {}).get("old", {}).get("mae")
+        sel = manifest["selected_models"].get(cat, "sum of components")
+        lines.append(
+            f"{cat:12s} {d['model']['mae']:9.3f} {d['model']['rmse']:7.3f} "
+            f"{d['best_baseline'] + ' ' + format(base[d['best_baseline']]['mae'], '.3f'):>18s} "
+            f"{base['last_10']['mae']:6.3f} {base['season_avg']['mae']:7.3f} "
+            f"{(format(old, '.3f') if old else '-'):>7s} {d['mae_improvement_vs_best_baseline_pct']:8.2f}%  {sel}"
+        )
+    lines.append("")
+    lines.append("Probability status: " + ", ".join(f"{k}={v}" for k, v in manifest["probability_status"].items()))
+    lines.append(f"Acceptance checks: {manifest['acceptance_checks']}")
+    return "\n".join(lines)
+
+
+@cli.command("ml-eval")
+def ml_eval(version: str = typer.Option(None, help="v2 artifact version (default: ACTIVE)")) -> None:
+    """Show held-out evaluation of a saved v2 model (no retraining)."""
+    from app.ml.engine.artifacts import load_bundle
+
+    def go():
+        b = load_bundle(version)
+        typer.echo(_format_eval(b.manifest, b.metrics))
+        for cat, d in b.metrics["synthetic_thresholds"].items():
+            e, n = d["empirical_joint"], d["normal_legacy"]
+            typer.echo(
+                f"  {cat:12s} synthetic Brier {e['brier']:.4f} ECE {e['ece']:.4f} (normal: {n['brier']:.4f}/{n['ece']:.4f}) "
+                f"80% interval coverage {d['interval_80_coverage']:.3f}"
+            )
+        rl = b.metrics.get("real_lines", {})
+        for cat, d in (rl.get("categories") or {}).items():
+            typer.echo(f"  {cat:12s} archived real lines n={d['unique_lines']} Brier {d['model']['brier']:.4f} ECE {d['model']['ece']:.4f}")
+
+    _run(go)
+
+
+@cli.command("ml-status")
+def ml_status() -> None:
+    """Active v2 model, rollback target, gates, warnings, and odds archive size."""
+    from app.services.ml_engine_service import status
+
+    def go():
+        with session_scope() as session:
+            typer.echo(status(session).model_dump_json(indent=2, exclude={"data_validation", "probability_gates"}))
+
+    _run(go)
+
+
+@cli.command("ml-rollback")
+def ml_rollback() -> None:
+    """Point ACTIVE back at the previously active v2 model."""
+    from app.ml.engine.artifacts import rollback
+
+    typer.echo(f"ACTIVE -> {rollback()}")
+
+
+@cli.command("odds-archive")
+def odds_archive(
+    backfill: bool = typer.Option(False, "--backfill", help="Archive existing prop_offers rows last seen before tip-off"),
+    settle: bool = typer.Option(True, "--settle/--no-settle", help="Settle snapshots for final games"),
+) -> None:
+    """Maintain the historical sportsbook odds archive (no Unabated API calls)."""
+    from app.services.odds_archive_service import archive_status, backfill_last_seen_pregame, settle_snapshots
+
+    def go():
+        with session_scope() as session:
+            if backfill:
+                typer.echo(f"Backfilled {backfill_last_seen_pregame(session)} pregame observations")
+            if settle:
+                typer.echo(f"Settled: {settle_snapshots(session)}")
+            typer.echo(json.dumps(archive_status(session), indent=2, default=str))
+
+    _run(go)
+
+
+@cli.command("ml-forecast")
+def ml_forecast(
+    settle_only: bool = typer.Option(False, "--settle-only", help="Only grade finished forecasts"),
+    horizon_hours: int = typer.Option(36, help="Record games tipping off within this many hours"),
+) -> None:
+    """Settle finished forecasts and record pregame forecasts (no training, no Unabated calls)."""
+    from app.services.forecast_archive_service import forecast_summary, record_forecasts, settle_forecasts
+
+    def go():
+        with session_scope() as session:
+            typer.echo(f"Settled: {settle_forecasts(session)}")
+        if not settle_only:
+            with session_scope() as session:
+                typer.echo(f"Recorded: {record_forecasts(session, horizon_hours=horizon_hours)}")
+        with session_scope() as session:
+            s = forecast_summary(session)
+            typer.echo(json.dumps({k: s[k] for k in ("forecasts_recorded", "by_status", "games_forecast", "lines_recorded", "warnings")}, indent=2, default=str))
+
+    _run(go)
+
+
+@cli.command("ml-train-v1")
+def ml_train_v1(version: str = typer.Option(None, help="Optional artifact version label")) -> None:
+    """Legacy v1 trainer (kept for rollback/comparison)."""
     from app.ml.inference import reset_prediction_engine
     from app.ml.training import train_all
 

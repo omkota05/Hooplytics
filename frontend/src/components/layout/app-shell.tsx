@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Flame, Layers, LayoutDashboard, TrendingUp, Users } from "lucide-react";
+import { CalendarDays, FlaskConical, Flame, Layers, LayoutDashboard, Sparkles, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -17,6 +17,8 @@ const NAV = [
   { href: "/prop-finder", label: "Prop Finder", icon: TrendingUp },
   { href: "/hit-streaks", label: "Hit Streaks", icon: Flame },
   { href: "/parlay-builder", label: "Parlay Builder", icon: Layers },
+  { href: "/recommended", label: "Recommended", icon: Sparkles },
+  { href: "/ml-lab", label: "ML Lab", icon: FlaskConical },
 ];
 
 function isActive(pathname: string, href: string) {

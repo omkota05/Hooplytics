@@ -50,6 +50,10 @@ class OddsImportScheduler:
                 run.offers_seen,
                 run.offers_matched,
             )
+            if run.status == "success":
+                from app.services.forecast_archive_service import run_forecast_cycle
+
+                run_forecast_cycle()
         except UnabatedRateLimitError as exc:
             logger.warning("Unabated rate limited; retry in %ss", exc.retry_after)
 

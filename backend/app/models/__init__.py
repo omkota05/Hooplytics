@@ -7,10 +7,13 @@ from app.models.entities import (
     SyncState,
     Team,
 )
+from app.models.ml_forecast import MlForecast, MlForecastLine
 from app.models.sportsbook import PropImportRun, PropOffer, SportsbookSource, UnabatedIdentityMapping
 
 __all__ = [
     "Game",
+    "MlForecast",
+    "MlForecastLine",
     "Player",
     "PlayerGameStat",
     "PlayerTeamSeason",

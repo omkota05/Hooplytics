@@ -10,10 +10,22 @@ from sqlalchemy.exc import OperationalError
 from app.analytics.categories import UnknownCategoryError
 from app.analytics.lines import InvalidLineError
 from app.analytics.windows import InvalidWindowError
-from app.api.routes import games, hit_streaks, parlay_builder, players, predictions, prop_finder, recommendations, stats, sync
+from app.api.routes import (
+    games,
+    hit_streaks,
+    ml,
+    parlay_builder,
+    players,
+    predictions,
+    prop_finder,
+    recommendations,
+    stats,
+    sync,
+)
 from app.config import get_settings
 from app.db import DatabaseNotConfiguredError, get_engine
 from app.logging_config import configure_logging
+from app.ml.engine.service import EngineUnavailableError
 from app.services.errors import BadRequestError, NotFoundError
 from app.services.prediction_service import ModelNotReadyError
 from app.sync.odds_scheduler import OddsImportScheduler
@@ -86,7 +98,8 @@ async def bad_request(_: Request, exc: Exception):
 
 
 @app.exception_handler(ModelNotReadyError)
-async def model_not_ready(_: Request, exc: ModelNotReadyError):
+@app.exception_handler(EngineUnavailableError)
+async def model_not_ready(_: Request, exc: Exception):
     return _error(503, str(exc))
 
 
@@ -111,5 +124,6 @@ for router in (
     prop_finder.router,
     hit_streaks.router,
     parlay_builder.router,
+    ml.router,
 ):
     app.include_router(router, prefix="/api")

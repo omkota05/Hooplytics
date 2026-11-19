@@ -54,8 +54,10 @@ not running, `make dev` launches it and waits.
 | `make lint` / `make typecheck` / `make build` | Ruff + ESLint, TypeScript, Next.js production build |
 | `make check` | Lint, type check, and test |
 | `make export-dataset out=x.csv` | Export the point-in-time ML feature table |
-| `make ml-train` | Train player stat models from synced history |
-| `make ml-metrics` | Show chronological backtest MAE/RMSE |
+| `make ml-train` | Train, evaluate, and (if acceptance checks pass) promote the v2 ML engine |
+| `make ml-eval` / `make ml-status` / `make ml-rollback` | Re-evaluate, inspect, or roll back the v2 engine |
+| `make odds-archive` | Settle archived pregame odds snapshots (`backfill=1` imports last-seen pregame lines) |
+| `make ml-train-v1` / `make ml-metrics` | Legacy v1 models (kept for comparison) |
 | `make ml-predict` | CLI prediction (`player=`, `game=`, `stat=`, `line=`) |
 | `make db-reset` | Delete all local data (asks for confirmation) |
 
@@ -206,21 +208,27 @@ All fixtures are **synthetic**: fictional teams like "Testville Testers", fictio
 2099. They are never real NBA data. The DB tests run against `hooplytics_test`, which the Postgres
 container creates on first start, and refuse to run against your main database.
 
-## ML roadmap
+## ML engine (v2)
 
-The groundwork is in place, but there is deliberately no model yet:
+Code lives in `backend/app/ml/engine/`. Training runs only via `make ml-train` (never on startup or per request).
 
-* `app/ml/dataset.py` builds one row per player-game with **point-in-time** features. Rolling averages
-  and rest days use only games before tip-off. Targets cover every stat category.
-  `make export-dataset out=games.csv` writes the table; Parquet needs
-  `pip install -r backend/requirements-ml.txt`.
-* `app/ml/prediction.py` defines the `StatPredictor` protocol (projection plus line probability) that a
-  scikit-learn or XGBoost model would implement.
-* The Picks page shows historical hit rates only. It says "ML predictions coming later" rather than
-  showing invented picks.
-
-Next steps for ML: train/validation splits by date (never random), a calibrated per-category model,
-backtests against the stored history, and a prediction API that reports its own validation metrics.
+* **Data**: final games only. DNPs and invalid rows are kept for history but excluded as targets; missing values are never zero-filled.
+* **Features** (`features.py`): rolling L3/5/10/20, season, EWM, median/std/min/max, trends, minutes and per-minute rates, usage shares,
+  team/opponent context (as-of merges strictly before tip-off), capped rest/schedule, shrunk head-to-head. Every feature is shifted
+  so the current game is never visible; `LeakageError` guards upcoming rows.
+* **Models**: baselines (season, L5, L10, EWM, weighted) compete with Ridge, HistGradientBoosting, and a two-stage minutes→rate model.
+  A model is used only if it beats the best baseline on validation. Combined stats are sums of component predictions.
+* **Evaluation**: chronological walk-forward (train → validation for selection, train+validation → untouched test), slices, old-v1 comparison
+  on identical rows.
+* **Uncertainty**: joint empirical residual distribution (PTS/REB/AST/3PM sampled together, so combos keep their correlation).
+  Probabilities are gated: *experimental* needs synthetic-threshold ECE ≤ 0.03 and Brier below base rate; *validated* additionally needs
+  ≥ 300 archived real pregame lines with ECE ≤ 0.04. Synthetic thresholds are not sportsbook lines.
+* **Odds archive**: `prop_offer_snapshots` is append-only and versioned on price change; snapshots are recorded on each scheduled import
+  (no extra provider calls) and settled after box scores sync.
+* **Artifacts**: `backend/artifacts/ml_engine/<version>/` with `ACTIVE`/`PREVIOUS` pointers (gitignored).
+* **API**: `/api/ml/status`, `/metrics`, `/projections/upcoming`, `/projections/player/{id}`, `/projections/prop`, `/comparison`.
+* **UI**: `/ml-lab` (research dashboard) and `/recommended` (experimental line-vs-projection comparison with a PrizePicks-only filter).
+* **Flags** (`backend/.env`): `ENABLE_ML_INFERENCE`, `ENABLE_ML_EXPERIMENTAL_UI`, `ENABLE_ML_RECOMMENDATIONS`, `ENABLE_ML_PROBABILITIES`.
 
 ## Unfinished / possible next work
 
@@ -230,4 +238,4 @@ backtests against the stored history, and a prediction API that reports its own 
 - [ ] A second data provider for redundancy (the `DataProvider` protocol is ready for one).
 - [ ] Frontend unit or end-to-end tests. The UI has been checked by hand in the browser, and the
       TypeScript type check and production build pass, but there are no automated UI tests.
-- [ ] ML models (see roadmap). Odds and injury data would need a paid or licensed source.
+- [ ] Validate ML probabilities on a larger archive of real pregame lines; historical injury data would need a licensed source.
